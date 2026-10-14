@@ -28,6 +28,8 @@ func main() {
 	r.Get("/users/{user_id}/categories", handlers.GetCategories)
 	r.Post("/users/{user_id}/categories", handlers.CreateCategory)
 	//Expense_handler
-	r.Post("/users/{user_id}/expanses", handlers.AddExpense)
+	r.Post("/users/{user_id}/expenses", handlers.AddExpense)
+	r.Get("/users/{user_id}/expenses", handlers.GetExpenses)
+
 	http.ListenAndServe(":9091", r)
 }

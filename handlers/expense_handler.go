@@ -45,3 +45,40 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+
+func GetExpenses(w http.ResponseWriter, r *http.Request) {
+	userIDstr := chi.URLParam(r, "user_id")
+
+	userID, err := strconv.Atoi(userIDstr)
+	if err != nil {
+		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+		return
+	}
+
+	var expenses []models.Expense
+	ctx := r.Context()
+
+	rows, err := Conn.Query(ctx, "SELECT id, name, description, price, created_at FROM expenses WHERE user_id = $1", userID)
+	if err != nil {
+		http.Error(w, "Error request to DB", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e models.Expense
+		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.Price, &e.CreatedAt); err != nil {
+			http.Error(w, "Error while reading from DB", http.StatusInternalServerError)
+			return
+		}
+		expenses = append(expenses, e)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(expenses); err != nil {
+		http.Error(w, " Error encoding json", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+
+}
