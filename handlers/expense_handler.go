@@ -3,23 +3,18 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"thirdProgram/models"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func AddExpense(w http.ResponseWriter, r *http.Request) {
-	userIDstr := chi.URLParam(r, "user_id")
 
-	userID, err := strconv.Atoi(userIDstr)
-	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+	userID, ok := parseUserID(w, r)
+	if !ok {
 		return
 	}
 
 	expanse := &models.Expense{}
-	if err = json.NewDecoder(r.Body).Decode(expanse); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(expanse); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
@@ -27,7 +22,7 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var currentBalance float64
-	err = Conn.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", userID).Scan(&currentBalance)
+	err := Conn.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", userID).Scan(&currentBalance)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -47,11 +42,8 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetExpenses(w http.ResponseWriter, r *http.Request) {
-	userIDstr := chi.URLParam(r, "user_id")
-
-	userID, err := strconv.Atoi(userIDstr)
-	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+	userID, ok := parseUserID(w, r)
+	if !ok {
 		return
 	}
 
@@ -75,10 +67,10 @@ func GetExpenses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	if err := json.NewEncoder(w).Encode(expenses); err != nil {
 		http.Error(w, " Error encoding json", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-
 }

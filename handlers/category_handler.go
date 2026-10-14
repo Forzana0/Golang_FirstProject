@@ -3,19 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"thirdProgram/models"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func GetCategories(w http.ResponseWriter, r *http.Request) {
 
-	userIDstr := chi.URLParam(r, "user_id")
-
-	userID, err := strconv.Atoi(userIDstr)
-	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+	userID, ok := parseUserID(w, r)
+	if !ok {
 		return
 	}
 
@@ -49,11 +43,8 @@ func GetCategories(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateCategory(w http.ResponseWriter, r *http.Request) {
-	userIDstr := chi.URLParam(r, "user_id")
-
-	userID, err := strconv.Atoi(userIDstr)
-	if err != nil {
-		http.Error(w, "Invalid user ID format", http.StatusBadRequest)
+	userID, ok := parseUserID(w, r)
+	if !ok {
 		return
 	}
 
@@ -65,7 +56,7 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = Conn.Exec(ctx, "INSERT INTO categories (name, user_id) VALUES($1, $2)", category.Name, userID)
+	_, err := Conn.Exec(ctx, "INSERT INTO categories (name, user_id) VALUES($1, $2)", category.Name, userID)
 	if err != nil {
 		http.Error(w, "Error while adding new category", http.StatusInternalServerError)
 		return
