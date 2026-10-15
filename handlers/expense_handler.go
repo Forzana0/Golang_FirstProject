@@ -35,13 +35,13 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := Conn.Begin(ctx)
 	if err != nil {
-		http.Error(w, "Error starting transaction", http.StatusInternalServerError)
+		http.Error(w, "Error starting transaction for adding expense", http.StatusInternalServerError)
 		return
 	}
 
 	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(ctx, "UPDATE users SET balance = balance -$1 WHERE id = $2", expanse.Price, userID)
+	_, err = tx.Exec(ctx, "UPDATE users SET balance = balance - $1 WHERE id = $2", expanse.Price, userID)
 	if err != nil {
 		http.Error(w, "Error while updating the balance", http.StatusInternalServerError)
 		return
@@ -93,4 +93,52 @@ func GetExpenses(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, " Error encoding json", http.StatusInternalServerError)
 		return
 	}
+}
+
+func DeleteExpense(w http.ResponseWriter, r *http.Request) {
+	userID, ok := parseUserID(w, r)
+	if !ok {
+		return
+	}
+
+	expenseID, ok := parseExpenseID(w, r)
+	if !ok {
+		return
+	}
+
+	ctx := r.Context()
+
+	var price float64
+	err := Conn.QueryRow(ctx, "SELECT price FROM expenses WHERE id = $1", expenseID).Scan(&price)
+	if err != nil {
+		http.Error(w, "Expense ID not found", http.StatusNotFound)
+		return
+	}
+
+	tx, err := Conn.Begin(ctx)
+	if err != nil {
+		http.Error(w, "Error starting transaction for deleting expense", http.StatusInternalServerError)
+		return
+	}
+
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "UPDATE users SET balance = balance + $1 WHERE id = $2", price, userID)
+	if err != nil {
+		http.Error(w, "Error while updating the balance", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec(ctx, "DELETE FROM expenses WHERE id = $1 AND user_id = $2", expenseID, userID)
+	if err != nil {
+		http.Error(w, "Error while deleting expense", http.StatusInternalServerError)
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		http.Error(w, "Error while commitin transaction", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

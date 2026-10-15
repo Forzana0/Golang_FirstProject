@@ -30,6 +30,7 @@ func main() {
 	//Expense_handler
 	r.Post("/users/{user_id}/expenses", handlers.AddExpense)
 	r.Get("/users/{user_id}/expenses", handlers.GetExpenses)
+	r.Delete("/users/{user_id}/expenses/{expense_id}", handlers.DeleteExpense)
 
 	http.ListenAndServe(":9091", r)
 }
