@@ -33,11 +33,31 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = Conn.Exec(ctx, "INSERT INTO expenses(name, description, price, user_id, category_id) VALUES($1, $2, $3, $4, $5)", expanse.Name, expanse.Description, expanse.Price, userID, expanse.CategoryID)
+	tx, err := Conn.Begin(ctx)
+	if err != nil {
+		http.Error(w, "Error starting transaction", http.StatusInternalServerError)
+		return
+	}
+
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, "UPDATE users SET balance = balance -$1 WHERE id = $2", expanse.Price, userID)
+	if err != nil {
+		http.Error(w, "Error while updating the balance", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec(ctx, "INSERT INTO expenses(name, description, price, user_id, category_id) VALUES($1, $2, $3, $4, $5)", expanse.Name, expanse.Description, expanse.Price, userID, expanse.CategoryID)
 	if err != nil {
 		http.Error(w, "Error while adding new expense", http.StatusInternalServerError)
 		return
 	}
+
+	if err := tx.Commit(ctx); err != nil {
+		http.Error(w, "Error commiting transaction", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -50,7 +70,7 @@ func GetExpenses(w http.ResponseWriter, r *http.Request) {
 	var expenses []models.Expense
 	ctx := r.Context()
 
-	rows, err := Conn.Query(ctx, "SELECT id, name, description, price, created_at FROM expenses WHERE user_id = $1", userID)
+	rows, err := Conn.Query(ctx, "SELECT id, name, description, price, created_at, user_id, category_id FROM expenses WHERE user_id = $1", userID)
 	if err != nil {
 		http.Error(w, "Error request to DB", http.StatusInternalServerError)
 		return
@@ -59,7 +79,7 @@ func GetExpenses(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var e models.Expense
-		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.Price, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.Name, &e.Description, &e.Price, &e.CreatedAt, &e.UserID, &e.CategoryID); err != nil {
 			http.Error(w, "Error while reading from DB", http.StatusInternalServerError)
 			return
 		}
