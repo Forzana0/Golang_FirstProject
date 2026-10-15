@@ -26,3 +26,13 @@ func parseExpenseID(w http.ResponseWriter, r *http.Request) (int, bool) {
 	}
 	return expenseID, true
 }
+
+func parseCategoryID(w http.ResponseWriter, r *http.Request) (int, bool) {
+	categoryIDstr := chi.URLParam(r, "category_id")
+	categoryID, err := strconv.Atoi(categoryIDstr)
+	if err != nil {
+		http.Error(w, "Invalid category ID format", http.StatusBadRequest)
+		return 0, false
+	}
+	return categoryID, true
+}

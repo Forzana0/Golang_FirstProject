@@ -24,9 +24,12 @@ func main() {
 	r.Get("/users", handlers.GetUsers)
 	r.Post("/users", handlers.CreateUser)
 	r.Delete("/users", handlers.DeleteUser)
+
 	//Category_handlers
 	r.Get("/users/{user_id}/categories", handlers.GetCategories)
 	r.Post("/users/{user_id}/categories", handlers.CreateCategory)
+	r.Delete("/users/{user_id}/categories/{category_id}", handlers.DeleteCategory)
+
 	//Expense_handler
 	r.Post("/users/{user_id}/expenses", handlers.AddExpense)
 	r.Get("/users/{user_id}/expenses", handlers.GetExpenses)
