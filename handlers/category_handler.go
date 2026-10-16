@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func GetCategories(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetCategories(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := parseUserID(w, r)
 	if !ok {
@@ -17,7 +17,7 @@ func GetCategories(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	rows, err := Pool.Query(ctx, "SELECT name, id  FROM categories WHERE user_id IS NULL OR user_id = $1", userID)
+	rows, err := h.pool.Query(ctx, "SELECT name, id  FROM categories WHERE user_id IS NULL OR user_id = $1", userID)
 	if err != nil {
 		http.Error(w, "Error request to DB", http.StatusInternalServerError)
 		return
@@ -44,7 +44,7 @@ func GetCategories(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreateCategory(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	userID, ok := parseUserID(w, r)
 	if !ok {
 		return
@@ -58,7 +58,7 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := Pool.Exec(ctx, "INSERT INTO categories (name, user_id) VALUES($1, $2)", category.Name, userID)
+	_, err := h.pool.Exec(ctx, "INSERT INTO categories (name, user_id) VALUES($1, $2)", category.Name, userID)
 	if err != nil {
 		http.Error(w, "Error while adding new category", http.StatusInternalServerError)
 		return
@@ -68,7 +68,7 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DeleteCategory(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, ok := parseCategoryID(w, r)
 	if !ok {
 		return
@@ -81,7 +81,7 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var dummy int
-	err := Pool.QueryRow(ctx, "SELECT id FROM categories WHERE id = $1 AND user_id = $2", categoryID, userID).Scan(&dummy)
+	err := h.pool.QueryRow(ctx, "SELECT id FROM categories WHERE id = $1 AND user_id = $2", categoryID, userID).Scan(&dummy)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			http.Error(w, "Category not found or it is a global category you can not delete", http.StatusForbidden)
@@ -91,7 +91,7 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := Pool.Begin(ctx)
+	tx, err := h.pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Error starting transaction for deleting category", http.StatusInternalServerError)
 		return

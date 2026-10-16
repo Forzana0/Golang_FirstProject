@@ -11,29 +11,31 @@ import (
 
 func main() {
 	ctx := context.Background()
-	var err error
-	handlers.Pool, err = database.Connect(ctx, "postgres://postgres:@localhost:5432/postgres?sslmode=disable")
+
+	pool, err := database.Connect(ctx, "postgres://postgres:@localhost:5432/postgres?sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
-	defer handlers.Pool.Close()
+	defer pool.Close()
+
+	h := handlers.New(pool)
 
 	r := chi.NewRouter()
 
 	//User_Handlers
-	r.Get("/users", handlers.GetUsers)
-	r.Post("/users", handlers.CreateUser)
-	r.Delete("/users", handlers.DeleteUser)
+	r.Get("/users", h.GetUsers)
+	r.Post("/users", h.CreateUser)
+	r.Delete("/users", h.DeleteUser)
 
 	//Category_handlers
-	r.Get("/users/{user_id}/categories", handlers.GetCategories)
-	r.Post("/users/{user_id}/categories", handlers.CreateCategory)
-	r.Delete("/users/{user_id}/categories/{category_id}", handlers.DeleteCategory)
+	r.Get("/users/{user_id}/categories", h.GetCategories)
+	r.Post("/users/{user_id}/categories", h.CreateCategory)
+	r.Delete("/users/{user_id}/categories/{category_id}", h.DeleteCategory)
 
 	//Expense_handler
-	r.Post("/users/{user_id}/expenses", handlers.AddExpense)
-	r.Get("/users/{user_id}/expenses", handlers.GetExpenses)
-	r.Delete("/users/{user_id}/expenses/{expense_id}", handlers.DeleteExpense)
+	r.Post("/users/{user_id}/expenses", h.AddExpense)
+	r.Get("/users/{user_id}/expenses", h.GetExpenses)
+	r.Delete("/users/{user_id}/expenses/{expense_id}", h.DeleteExpense)
 
 	http.ListenAndServe(":9091", r)
 }
