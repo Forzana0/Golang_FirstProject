@@ -12,11 +12,11 @@ import (
 func main() {
 	ctx := context.Background()
 	var err error
-	handlers.Conn, err = database.Connect(ctx, "postgres://postgres:@localhost:5432/postgres?sslmode=disable")
+	handlers.Pool, err = database.Connect(ctx, "postgres://postgres:@localhost:5432/postgres?sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
-	defer handlers.Conn.Close(ctx)
+	defer handlers.Pool.Close()
 
 	r := chi.NewRouter()
 

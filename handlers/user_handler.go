@@ -5,16 +5,16 @@ import (
 	"net/http"
 	"thirdProgram/models"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var Conn *pgx.Conn
+var Pool *pgxpool.Pool
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var users []models.User
 
-	rows, err := Conn.Query(ctx, "SELECT * FROM users ORDER BY id")
+	rows, err := Pool.Query(ctx, "SELECT * FROM users ORDER BY id")
 	if err != nil {
 		http.Error(w, "Error request to DB", http.StatusInternalServerError)
 		return
@@ -47,7 +47,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := Conn.Exec(ctx, "INSERT INTO users (username, balance) VALUES($1, $2)", user.Username, user.Balance)
+	_, err := Pool.Exec(ctx, "INSERT INTO users (username, balance) VALUES($1, $2)", user.Username, user.Balance)
 	if err != nil {
 		http.Error(w, "Error while adding new user", http.StatusInternalServerError)
 		return
@@ -69,7 +69,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	_, err := Conn.Exec(ctx, "DELETE FROM users WHERE id =$1", user.ID)
+	_, err := Pool.Exec(ctx, "DELETE FROM users WHERE id =$1", user.ID)
 	if err != nil {
 		http.Error(w, "Error while deleting user", http.StatusInternalServerError)
 		return

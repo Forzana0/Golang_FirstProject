@@ -22,7 +22,7 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var currentBalance float64
-	err := Conn.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", userID).Scan(&currentBalance)
+	err := Pool.QueryRow(ctx, "SELECT balance FROM users WHERE id = $1", userID).Scan(&currentBalance)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -33,7 +33,7 @@ func AddExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := Conn.Begin(ctx)
+	tx, err := Pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Error starting transaction for adding expense", http.StatusInternalServerError)
 		return
@@ -70,7 +70,7 @@ func GetExpenses(w http.ResponseWriter, r *http.Request) {
 	var expenses []models.Expense
 	ctx := r.Context()
 
-	rows, err := Conn.Query(ctx, "SELECT id, name, description, price, created_at, user_id, category_id FROM expenses WHERE user_id = $1", userID)
+	rows, err := Pool.Query(ctx, "SELECT id, name, description, price, created_at, user_id, category_id FROM expenses WHERE user_id = $1", userID)
 	if err != nil {
 		http.Error(w, "Error request to DB", http.StatusInternalServerError)
 		return
@@ -109,13 +109,13 @@ func DeleteExpense(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var price float64
-	err := Conn.QueryRow(ctx, "SELECT price FROM expenses WHERE id = $1", expenseID).Scan(&price)
+	err := Pool.QueryRow(ctx, "SELECT price FROM expenses WHERE id = $1", expenseID).Scan(&price)
 	if err != nil {
 		http.Error(w, "Expense ID not found", http.StatusNotFound)
 		return
 	}
 
-	tx, err := Conn.Begin(ctx)
+	tx, err := Pool.Begin(ctx)
 	if err != nil {
 		http.Error(w, "Error starting transaction for deleting expense", http.StatusInternalServerError)
 		return
